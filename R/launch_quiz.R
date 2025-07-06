@@ -7,6 +7,14 @@ launch_quiz <- function(dataset = NULL) {
     stop("Please specify the dataset folder name, e.g., launch_quiz('onetree')")
   }
 
+  # Set environment variable so app.R can read it
+  Sys.setenv(CORALQUIZ_DATASET = dataset)
+
   app_dir <- system.file("shinyapp", package = "coralquiz")
-  shiny::runApp(appDir = app_dir, launch.browser = TRUE, display.mode = "normal", args = list(dataset = dataset))
+
+  shiny::runApp(
+    appDir = app_dir,
+    launch.browser = TRUE,
+    display.mode = "normal"
+  )
 }
