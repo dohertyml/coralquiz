@@ -32,5 +32,5 @@ practice("caribbean_benthos")
 quiz("caribbean_benthos", n = 20)
 
 # Optional: save a CSV summary of results
-quiz("caribbean_benthos", n = 20, save_csv = TRUE, csv_path = getwd(), user = "Student01")
+quiz("caribbean_benthos", n = 20, save_csv = TRUE, csv_path = getwd(), user = "YOURNAMEHERE")
 
