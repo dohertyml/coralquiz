@@ -6,7 +6,7 @@ practice <- function(source = NULL, photos_root = NULL) {
     app_dir <- normalizePath(local_app)
   } else {
     # Fallback to installed package, if you later make this a package
-    app_dir <- system.file("app", package = "coralQuiz")
+    app_dir <- system.file("app", package = "coralquiz")
     if (app_dir == "") stop("Could not find app in inst/app or in an installed package")
   }
 

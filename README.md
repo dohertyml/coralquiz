@@ -17,11 +17,11 @@ Supports jpg, jpeg, png, webp. Requires ≥ 4 species per location.
 
 install.packages("remotes")
 
-remotes::install_github("dohertyml/coralQuiz") 
+remotes::install_github("dohertyml/coralquiz") 
 
-library(coralQuiz)
+library(coralquiz)
 
-library(coralQuiz)
+library(coralquiz)
 
 # PRACTICE: free play, immediate feedback
 practice("caribbean_benthos")

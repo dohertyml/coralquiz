@@ -3,3 +3,5 @@
 ^^\\.RData$$
 ^^\\.git$$
 ^^\\.gitignore$$
+^.*\.Rproj$
+^\.Rproj\.user$

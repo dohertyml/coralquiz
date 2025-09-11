@@ -1,4 +1,4 @@
-# Shiny app used by coralQuiz::practice() and coralQuiz::quiz()
+# Shiny app used by coralquiz::practice() and coralquiz::quiz()
 library(shiny)
 library(stringr)
 library(purrr)
@@ -89,13 +89,13 @@ server <- function(input, output, session) {
   }
   clear_status <- function() output$status_ui <- renderUI(NULL)
 
-  message("[coralQuiz] Using base_dir: ", base_dir)
+  message("[coralquiz] Using base_dir: ", base_dir)
 
   # Fixed, non-reactive choice of source (decided once)
   choose_source <- function() {
     if (!dir.exists(base_dir)) return(NULL)
     srcs <- collect_sources(base_dir)
-    message("[coralQuiz] Sources found: ", paste(srcs, collapse = ", "))
+    message("[coralquiz] Sources found: ", paste(srcs, collapse = ", "))
     if (!length(srcs)) return(NULL)
     if (!is.null(opt_default) && opt_default %in% srcs) opt_default else srcs[1]
   }
@@ -178,7 +178,7 @@ server <- function(input, output, session) {
   observeEvent(TRUE, {
     # pick source once
     rv$current_source <- choose_source()
-    message("[coralQuiz] Using source: ", rv$current_source %||% "<none>")
+    message("[coralquiz] Using source: ", rv$current_source %||% "<none>")
 
     if (is.null(rv$current_source)) {
       show_status("No sources found under the photos directory.")

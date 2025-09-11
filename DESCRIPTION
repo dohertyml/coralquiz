@@ -1,18 +1,11 @@
-Package: coral_quiz
+Package: coralquiz
 Title: Coral Identification Flashcards and Quiz
 Version: 0.1.0
-Authors@R: 
-    person("Matthew Doherty", "", role = c("aut","cre"), email = "dohertym@protonmail.com")
+Authors@R: person("Matthew Doherty", "", role = c("aut","cre"), email = "dohertym@protonmail.com")
 Description: Shiny flashcards and a simple quiz for coral identification from folder-based photo libraries.
 License: MIT + file LICENSE
 Depends: R (>= 4.1)
-Imports: 
-    shiny,
-    stringr,
-    purrr,
-    dplyr,
-    tidyr
+Imports: shiny, stringr, purrr, dplyr, tidyr
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
-

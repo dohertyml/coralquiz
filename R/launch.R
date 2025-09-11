@@ -59,7 +59,7 @@ run_coral_app <- function(mode,
   if (file.exists(file.path(app_dir_local, "app.R"))) {
     app_dir <- normalizePath(app_dir_local, mustWork = TRUE)
   } else {
-    app_dir <- system.file("app", package = "coralQuiz")
+    app_dir <- system.file("app", package = "coralquiz")
   }
   if (nzchar(app_dir) == FALSE) {
     stop("Could not locate Shiny app in inst/app or in the installed package.")
