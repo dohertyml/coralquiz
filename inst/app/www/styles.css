@@ -70,3 +70,16 @@ body {
 .modal-content { color: #000; background: #fff; }
 .modal-title, .modal-body, .modal-footer { color: #000; }
 .modal-content h3 { color: #000; }
+
+/* Make the option labels bigger, and the Next button text smaller */
+.opt-btn {
+  font-size: 1.35rem;     /* was ~1.05rem */
+  padding: 18px 20px;     /* a touch more padding for balance */
+  letter-spacing: 0.1px;  /* slightly tighter */
+}
+
+.btn-next {
+  font-size: 0.95rem;     /* smaller than options */
+  font-weight: 600;       /* tone down from 700 */
+  padding: 10px 14px;     /* slightly smaller button */
+}
