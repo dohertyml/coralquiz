@@ -1,4 +1,4 @@
-coralQuiz
+coral_quiz
 
 Flashcard-style coral identification practice and quiz app in R.
 Reads your photos from simple folders (per location → per species), launches a Shiny app, and (optionally) records quiz scores.
