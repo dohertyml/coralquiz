@@ -13,8 +13,6 @@ Zero data wrangling: just put photos in folders; names become labels.
 
 Multiple locations/projects: add a new top-level folder, no code changes.
 
-Works locally or with an external photo library (shared drive / NAS).
-
 Supports jpg, jpeg, png, webp. Requires ≥ 4 species per location.
 
 install.packages("remotes")
