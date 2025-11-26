@@ -5,35 +5,65 @@ library(purrr)
 library(dplyr)
 library(tidyr)
 
-# -------- helpers --------
+# -------- GitHub image settings --------
+
 valid_ext <- c("jpg","jpeg","png","webp")
 nice_species <- function(x) gsub("_", " ", x)
 
-collect_sources <- function(base_dir) {
-  if (!dir.exists(base_dir)) return(character(0))
-  list.dirs(base_dir, full.names = FALSE, recursive = FALSE) |> sort()
+github_raw_base  <- "https://raw.githubusercontent.com/dohertyml/coralquiz-images/main"
+github_index_url <- file.path(github_raw_base, "index.csv")
+
+.coralquiz_cache <- new.env(parent = emptyenv())
+
+load_github_index <- function() {
+  if (!is.null(.coralquiz_cache$index)) {
+    return(.coralquiz_cache$index)
+  }
+
+  idx <- tryCatch(
+    utils::read.csv(github_index_url, stringsAsFactors = FALSE),
+    error = function(e) {
+      message("[coralquiz] Failed to fetch GitHub index: ", conditionMessage(e))
+      data.frame(
+        source      = character(),
+        species_key = character(),
+        filename    = character(),
+        stringsAsFactors = FALSE
+      )
+    }
+  )
+
+  # Basic sanity filter on extensions
+  keep <- tolower(tools::file_ext(idx$filename)) %in% valid_ext
+  idx  <- idx[keep, , drop = FALSE]
+
+  .coralquiz_cache$index <- idx
+  idx
 }
 
-collect_items <- function(base_dir, source) {
-  src_dir <- file.path(base_dir, source)
-  if (!dir.exists(src_dir)) return(tibble())
-  species_dirs <- list.dirs(src_dir, full.names = TRUE, recursive = FALSE)
+collect_sources <- function() {
+  idx <- load_github_index()
+  sort(unique(idx$source))
+}
+
+collect_items <- function(source) {
+  idx <- load_github_index()
+  idx <- idx[idx$source == source, , drop = FALSE]
+  if (!nrow(idx)) return(tibble())
+
   tibble(
-    species_dir = species_dirs,
-    species_key = basename(species_dirs),
-    species_lab = nice_species(basename(species_dirs))
-  ) |>
-    mutate(images = map(species_dir, ~ list.files(.x, full.names = TRUE))) |>
-    unnest(images) |>
-    filter(tolower(tools::file_ext(images)) %in% valid_ext) |>
-    mutate(filename = basename(images))
+    species_key = idx$species_key,
+    species_lab = nice_species(idx$species_key),
+    filename    = idx$filename
+  )
 }
 
-img_src <- function(base_path_name, source, species_key, filename) {
-  file.path(base_path_name, source, species_key, filename)
+img_src <- function(source, species_key, filename) {
+  file.path(github_raw_base, source, species_key, filename)
 }
 
 # -------- runtime options from practice()/quiz() --------
+
 opt_mode     <- getOption("coralquiz.mode", "practice")         # "practice" or "quiz"
 opt_n        <- getOption("coralquiz.n", NA_integer_)           # number of Qs in quiz
 opt_save_csv <- isTRUE(getOption("coralquiz.save_csv", FALSE))
@@ -42,6 +72,7 @@ opt_user     <- getOption("coralquiz.user", NA_character_)
 opt_default  <- getOption("coralquiz.default_source", NULL)
 
 # -------- UI --------
+
 ui <- fluidPage(
   tags$head(tags$link(rel = "stylesheet", href = "styles.css")),
   # Simple HUD (no source picker)
@@ -67,34 +98,25 @@ ui <- fluidPage(
 )
 
 # -------- server --------
-server <- function(input, output, session) {
 
-  # Determine photos root (bundled or external)
-  external_root <- getOption("coralquiz.photos_root", NULL)
-  if (is.null(external_root)) {
-    base_dir <- normalizePath(file.path("www", "photos"), mustWork = FALSE)
-    base_path_name <- "photos"  # URL path under /www
-  } else {
-    base_dir <- normalizePath(external_root, mustWork = FALSE)
-    base_path_name <- "userphotos"
-    shiny::addResourcePath(base_path_name, base_dir)
-  }
+server <- function(input, output, session) {
 
   # Status helpers
   show_status <- function(msg) {
     output$status_ui <- renderUI({
-      div(style = "margin: 10px auto 0; max-width: 880px; font-weight:600; background:#fff; color:#000; padding:10px 14px; border-radius:10px;",
-          msg)
+      div(
+        style = "margin: 10px auto 0; max-width: 880px; font-weight:600; background:#fff; color:#000; padding:10px 14px; border-radius:10px;",
+        msg
+      )
     })
   }
   clear_status <- function() output$status_ui <- renderUI(NULL)
 
-  message("[coralquiz] Using base_dir: ", base_dir)
+  message("[coralquiz] Using GitHub images from: ", github_raw_base)
 
   # Fixed, non-reactive choice of source (decided once)
   choose_source <- function() {
-    if (!dir.exists(base_dir)) return(NULL)
-    srcs <- collect_sources(base_dir)
+    srcs <- collect_sources()
     message("[coralquiz] Sources found: ", paste(srcs, collapse = ", "))
     if (!length(srcs)) return(NULL)
     if (!is.null(opt_default) && opt_default %in% srcs) opt_default else srcs[1]
@@ -114,22 +136,23 @@ server <- function(input, output, session) {
   build_bank <- function() {
     clear_status()
     if (is.null(rv$current_source)) {
-      show_status("No sources found under the photos directory.")
+      show_status("No sources found in the GitHub image repository.")
       return(FALSE)
     }
-    items <- collect_items(base_dir, rv$current_source)
+
+    items <- collect_items(rv$current_source)
     if (nrow(items) == 0) {
       show_status(HTML(paste0(
-        "No images found for source <b>", rv$current_source, "</b> in <code>",
-        file.path(base_dir, rv$current_source), "</code>."
+        "No images found for source <b>", rv$current_source, "</b> in the GitHub index."
       )))
       return(FALSE)
     }
-    n_species <- nrow(dplyr::distinct(items, species_key))
+
+    n_species <- nrow(distinct(items, species_key))
     if (n_species < 4) {
       show_status(HTML(paste0(
-        "Need at least <b>4 species folders</b> in <code>",
-        file.path(base_dir, rv$current_source), "</code>. Found ", n_species, "."
+        "Need at least <b>4 species</b> for source <b>",
+        rv$current_source, "</b>. Found ", n_species, "."
       )))
       return(FALSE)
     }
@@ -150,16 +173,19 @@ server <- function(input, output, session) {
 
   next_question <- function() {
     req(!is.null(rv$bank), nrow(rv$bank) > 0)
+
     if (opt_mode == "quiz" && rv$total >= rv$target) {
       rv$finished <- TRUE
       show_results()
       return(invisible(NULL))
     }
+
     rv$idx <- rv$idx + 1L
     if (rv$idx > length(rv$order)) {
       rv$order <- sample(seq_len(nrow(rv$bank)))
       rv$idx <- 1L
     }
+
     row <- rv$bank[rv$order[rv$idx], , drop = FALSE]
     rv$current <- row
     rv$answered <- FALSE
@@ -168,22 +194,23 @@ server <- function(input, output, session) {
 
     all_species <- rv$bank |> distinct(species_key, species_lab)
     others <- all_species |> filter(species_key != row$species_key) |> slice_sample(n = 3)
+
     rv$options <- bind_rows(
       tibble(species_key = row$species_key, species_lab = row$species_lab, correct = TRUE),
       mutate(others, correct = FALSE)
     ) |> slice_sample(n = 4)
   }
 
-  # ---- INITIALISE inside a reactive context (this was the root cause) ----
+  # ---- INITIALISE ----
   observeEvent(TRUE, {
-    # pick source once
     rv$current_source <- choose_source()
-    message("[coralquiz] Using source: ", rv$current_source %||% "<none>")
+    message("[coralquiz] Using source: ", if (is.null(rv$current_source)) "<none>" else rv$current_source)
 
     if (is.null(rv$current_source)) {
-      show_status("No sources found under the photos directory.")
+      show_status("No sources found in the GitHub image repository.")
       return(invisible(NULL))
     }
+
     if (build_bank()) {
       next_question()
     }
@@ -191,30 +218,34 @@ server <- function(input, output, session) {
 
   # ---- outputs ----
   output$image_ui <- renderUI({
-    req(rv$current)
+    req(rv$current, rv$current_source)
+
     src <- img_src(
-      base_path_name = base_path_name,
-      source = rv$current_source,
+      source      = rv$current_source,
       species_key = rv$current$species_key,
-      filename = rv$current$filename
+      filename    = rv$current$filename
     )
-    tags$div(class = "img-wrap",
-             tags$img(src = src, class = "flashcard-img", alt = "coral image"))
+
+    tags$div(
+      class = "img-wrap",
+      tags$img(src = src, class = "flashcard-img", alt = "coral image")
+    )
   })
 
   output$options_ui <- renderUI({
     req(rv$options)
-    div(class = "options-grid",
-        lapply(seq_len(nrow(rv$options)), function(i) {
-          lab <- rv$options$species_lab[i]
-          cls <- "opt-btn"
-          if (rv$answered) {
-            if (rv$options$correct[i]) cls <- paste(cls, "is-correct")
-            if (!rv$options$correct[i] && identical(lab, rv$chosen_label))
-              cls <- paste(cls, "is-wrong")
-          }
-          actionButton(paste0("opt_", i), lab, class = cls)
-        })
+    div(
+      class = "options-grid",
+      lapply(seq_len(nrow(rv$options)), function(i) {
+        lab <- rv$options$species_lab[i]
+        cls <- "opt-btn"
+        if (rv$answered) {
+          if (rv$options$correct[i]) cls <- paste(cls, "is-correct")
+          if (!rv$options$correct[i] && identical(lab, rv$chosen_label))
+            cls <- paste(cls, "is-wrong")
+        }
+        actionButton(paste0("opt_", i), lab, class = cls)
+      })
     )
   })
 
@@ -246,6 +277,7 @@ server <- function(input, output, session) {
   output$qnum <- renderText({
     if (opt_mode == "quiz") sprintf("%d / %d", rv$total + 1L, rv$target)
   })
+
   output$score_text <- renderText({
     if (opt_mode == "quiz") sprintf("%d correct", rv$score) else ""
   })
@@ -254,6 +286,7 @@ server <- function(input, output, session) {
   show_results <- function() {
     if (opt_mode != "quiz") return(invisible(NULL))
     percent <- round(100 * rv$score / rv$target)
+
     showModal(modalDialog(
       title = "Quiz complete",
       easyClose = TRUE,
@@ -266,6 +299,7 @@ server <- function(input, output, session) {
         p(sprintf("That is %d%%", percent))
       )
     ))
+
     if (isTRUE(opt_save_csv)) {
       dir.create(opt_csv_path, recursive = TRUE, showWarnings = FALSE)
       out <- data.frame(
@@ -277,15 +311,19 @@ server <- function(input, output, session) {
         percent   = percent,
         stringsAsFactors = FALSE
       )
-      fn <- file.path(opt_csv_path,
-                      sprintf("coralquiz_results_%s.csv", format(Sys.time(), "%Y%m%d_%H%M%S")))
+      fn <- file.path(
+        opt_csv_path,
+        sprintf("coralquiz_results_%s.csv", format(Sys.time(), "%Y%m%d_%H%M%S"))
+      )
       try(utils::write.csv(out, fn, row.names = FALSE), silent = TRUE)
     }
   }
 
   observeEvent(input$restart, {
     removeModal()
-    rv$score <- 0L; rv$total <- 0L; rv$finished <- FALSE
+    rv$score <- 0L
+    rv$total <- 0L
+    rv$finished <- FALSE
     rv$order <- sample(seq_len(nrow(rv$bank)))
     rv$idx <- 0L
     next_question()

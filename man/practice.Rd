@@ -4,14 +4,19 @@
 \alias{practice}
 \title{Launch the Coral ID practice app}
 \usage{
-practice(source = NULL, photos_root = NULL)
+practice(location = NULL)
 }
 \arguments{
-\item{source}{Default location/project folder to use (e.g., "caribbean_benthos")}
-
-\item{photos_root}{Optional external folder containing sources and species subfolders}
+\item{location}{Default location/project folder to use (e.g., \code{"caribbean_benthos"}).
+This must match a \code{source} value in the \code{index.csv} file in the
+\code{coralquiz-images} GitHub repository. If \code{NULL}, the first available
+location in \code{index.csv} is used.}
 }
 \description{
-Reads images from bundled \verb{inst/app/www/photos/<source>/<species>/...}
-or from an external \code{photos_root} with the same structure.
+Launches the interactive Coral ID practice app.
+
+Images are read from the external GitHub repository
+\code{dohertyml/coralquiz-images}, using the structure
+\code{<location>/<species_key>/<filename>} described in the accompanying
+\code{index.csv} file.
 }

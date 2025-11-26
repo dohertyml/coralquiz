@@ -5,27 +5,32 @@
 \title{Launch a graded quiz}
 \usage{
 quiz(
-  source,
+  location,
   n = 20,
-  photos_root = NULL,
   save_csv = FALSE,
   csv_path = getwd(),
   user = Sys.info()[["user"]]
 )
 }
 \arguments{
-\item{source}{Location/project folder (e.g., "caribbean_benthos")}
+\item{location}{Location or project folder (for example \code{"caribbean_benthos"}).
+This must match a \code{source} value in the \code{index.csv} file in the
+\code{coralquiz-images} GitHub repository.}
 
-\item{n}{Number of questions (default 20)}
+\item{n}{Number of questions (default 20).}
 
-\item{photos_root}{Optional external folder of images}
+\item{save_csv}{Logical; whether to write a CSV summary at the end of the quiz.}
 
-\item{save_csv}{Write a CSV summary at the end}
+\item{csv_path}{Directory to write the CSV into (default working directory).}
 
-\item{csv_path}{Directory to write the CSV into (default working directory)}
-
-\item{user}{Optional user name recorded in the CSV}
+\item{user}{Optional user name recorded in the CSV (default is \code{Sys.info()[["user"]]}).}
 }
 \description{
-Presents n questions and reports a score. Optionally writes a CSV summary.
+Launches a graded coral identification quiz in a Shiny app.
+
+Images are read from the external GitHub repository
+\code{dohertyml/coralquiz-images}, using the structure
+\code{<location>/<species_key>/<filename>} described in the accompanying
+\code{index.csv} file. The app presents \code{n} questions and reports a score.
+If requested, it also writes a one line CSV summary of the attempt.
 }
