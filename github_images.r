@@ -15,3 +15,17 @@ build_github_urls <- function(df) {
   )
   df
 }
+
+# Load the image index (index.csv) from the coralquiz-images repo
+github_image_index <- local({
+  .cache <- NULL
+
+  function(refresh = FALSE) {
+    if (is.null(.cache) || refresh) {
+      url <- paste0(github_image_base(), "/index.csv")
+      .cache <<- readr::read_csv(url, show_col_types = FALSE)
+    }
+    .cache
+  }
+})
+
